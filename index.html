@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AETHERIUS | Ultra High Graphics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;900&family=Inter:wght@300;600&display=swap" rel="stylesheet">
+    <style>
+        :root { --gold: #d4af37; --dark: #050505; }
+        body { background: var(--dark); color: white; font-family: 'Inter', sans-serif; overflow-x: hidden; }
+        .font-epic { font-family: 'Cinzel', serif; }
+        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .gold-text { background: linear-gradient(to bottom, #f4ebd0, #d4af37); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        /* High-end lighting effects */
+        .hero-glow { position: absolute; width: 600px; height: 600px; background: radial-gradient(circle, rgba(212, 175, 55, 0.15) 0%, transparent 70%); top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; }
+        
+        #three-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; }
+        .video-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.4; z-index: -1; filter: saturate(0.5) brightness(0.8); }
+    </style>
+</head>
+<body>
+
+    <video autoplay muted loop class="video-bg">
+        <source src="https://assets.mixkit.co/videos/preview/mixkit-nebula-in-outer-space-background-1260-large.mp4" type="video/mp4">
+    </video>
+
+    <canvas id="three-canvas"></canvas>
+
+    <nav class="fixed w-full z-50 flex justify-between items-center px-10 py-6 glass border-b">
+        <div class="font-epic text-3xl font-black tracking-tighter gold-text">AETHERIUS</div>
+        <div class="hidden md:flex space-x-12 uppercase text-xs tracking-[0.3em] font-semibold">
+            <a href="#" class="hover:text-[#d4af37] transition duration-500">The Simulation</a>
+            <a href="#" class="hover:text-[#d4af37] transition duration-500">World Engine</a>
+            <a href="#" class="hover:text-[#d4af37] transition duration-500">Architecture</a>
+        </div>
+        <a href="https://github.com" class="px-6 py-2 bg-white/5 border border-white/20 hover:border-[#d4af37] transition text-xs uppercase tracking-widest">Git_Repo</a>
+    </nav>
+
+    <section class="relative h-screen flex flex-col items-center justify-center text-center px-4 overflow-hidden">
+        <div class="hero-glow"></div>
+        <div data-aos="zoom-out" data-aos-duration="2000">
+            <h2 class="font-epic text-sm tracking-[0.8em] mb-4 text-white/50">COMPLEXITY REIMAGINED</h2>
+            <h1 class="font-epic text-7xl md:text-9xl font-black gold-text mb-6">ULTRASCALE</h1>
+            <p class="max-w-xl text-lg text-gray-400 font-light leading-relaxed mb-10 mx-auto">
+                Witness a high-fidelity universe governed by real-time physics and decentralized logic. Built on the edge of modern GPU architecture.
+            </p>
+            <div class="flex flex-col md:flex-row gap-6 justify-center">
+                <button class="bg-[#d4af37] text-black px-12 py-4 font-bold uppercase tracking-widest hover:scale-105 transition transform">Initialize Engine</button>
+                <button class="glass px-12 py-4 font-bold uppercase tracking-widest hover:bg-white/10 transition">Source Code</button>
+            </div>
+        </div>
+    </section>
+
+    <section class="py-32 px-10 max-w-7xl mx-auto relative z-20">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+            <div data-aos="fade-right" class="glass p-12 group hover:border-[#d4af37]/50 transition duration-700">
+                <div class="h-1 w-20 bg-[#d4af37] mb-8 group-hover:w-full transition-all duration-700"></div>
+                <h3 class="font-epic text-3xl mb-4">Neural NPC Mesh</h3>
+                <p class="text-gray-400 font-light">Every entity is powered by a localized LLM, allowing for emergent dialogue and dynamic world-shaping consequences.</p>
+            </div>
+            <div data-aos="fade-left" class="glass p-12 group hover:border-[#d4af37]/50 transition duration-700">
+                <div class="h-1 w-20 bg-[#d4af37] mb-8 group-hover:w-full transition-all duration-700"></div>
+                <h3 class="font-epic text-3xl mb-4">Volumetric Lighting</h3>
+                <p class="text-gray-400 font-light">Custom ray-marching shaders running directly in-engine to provide cinematic atmosphere across all procedural biomes.</p>
+            </div>
+        </div>
+    </section>
+
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        AOS.init();
+
+        // High-end 3D background element
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('three-canvas'), alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+
+        const geometry = new THREE.IcosahedronGeometry(2, 0);
+        const material = new THREE.MeshPhysicalMaterial({
+            color: 0xd4af37,
+            wireframe: true,
+            emissive: 0xd4af37,
+            emissiveIntensity: 0.5,
+            transparent: true,
+            opacity: 0.3
+        });
+        const sphere = new THREE.Mesh(geometry, material);
+        scene.add(sphere);
+        camera.position.z = 5;
+
+        function animate() {
+            requestAnimationFrame(animate);
+            sphere.rotation.x += 0.001;
+            sphere.rotation.y += 0.002;
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>git add index.html
+git commit -m "Launch ultra-graphics site"
+git push origin main
