@@ -3,6 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AETHERIUS | The Shattered Realm</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Fauna+One&display=swap" rel="stylesheet">
+    <style>
+        body { background-color: #0a0a0b; color: #e5e7eb; font-family: 'Fauna One', serif; }
+        .font-epic { font-family: 'Cinzel', serif; }
+        .gold-glow { text-shadow: 0 0 15px rgba(212, 175, 55, 0.5); }
+        .gold-border { border: 1px solid #d4af37; }
+        .hero-gradient {
+            background: linear-gradient(to bottom, rgba(10, 10, 11, 0.2), #0a0a0b),
+                        url('https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&q=80&w=2000');
+            background-size: cover;
+            background-position: center;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <nav class="p-6 flex justify-between items-center border-b border-white/10">
+        <div class="font-epic text-2xl font-bold tracking-widest gold-glow text-[#d4af37]">AETHERIUS</div>
+        <div class="space-x-8 text-sm uppercase tracking-widest">
+            <a href="#features" class="hover:text-[#d4af37] transition">The World</a>
+            <a href="#devlog" class="hover:text-[#d4af37] transition">Lore</a>
+            <a href="https://github.com" class="px-4 py-2 gold-border hover:bg-[#d4af37] hover:text-black transition">GitHub</a>
+        </div>
+    </nav>
+
+    <header class="h-[80vh] flex flex-col items-center justify-center text-center hero-gradient px-4">
+        <h1 class="font-epic text-6xl md:text-8xl mb-4 gold-glow font-bold">A NEW ERA BEGINS</h1>
+        <p class="max-w-2xl text-lg text-gray-400 mb-8 italic">"A complex simulation of power, magic, and consequence. Built by architects, played by legends."</p>
+        <div class="flex gap-4">
+            <button class="bg-[#d4af37] text-black px-8 py-3 font-bold uppercase tracking-tighter hover:bg-[#f4ebd0] transition">Download Alpha</button>
+            <button class="bg-transparent border border-white/30 px-8 py-3 font-bold uppercase tracking-tighter hover:bg-white/10 transition">Read the Docs</button>
+        </div>
+    </header>
+
+    <section id="features" class="py-24 px-6 max-w-7xl mx-auto">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
+            <div class="text-center p-8 gold-border bg-white/5 backdrop-blur-sm">
+                <h3 class="font-epic text-xl mb-4 text-[#d4af37]">Procedural Realms</h3>
+                <p class="text-sm text-gray-400">Every landscape is unique, generated via complex noise algorithms that ensure no two adventures are ever the same.</p>
+            </div>
+            <div class="text-center p-8 gold-border bg-white/5 backdrop-blur-sm">
+                <h3 class="font-epic text-xl mb-4 text-[#d4af37]">Dynamic Economy</h3>
+                <p class="text-sm text-gray-400">A living, breathing marketplace influenced by player trade, resource scarcity, and global events.</p>
+            </div>
+            <div class="text-center p-8 gold-border bg-white/5 backdrop-blur-sm">
+                <h3 class="font-epic text-xl mb-4 text-[#d4af37]">Deep Lore Systems</h3>
+                <p class="text-sm text-gray-400">AI-driven NPC behavior and history generation that builds a world with real weight and consequence.</p>
+            </div>
+        </div>
+    </section>
+
+    <footer class="py-12 border-t border-white/10 text-center text-xs text-gray-500 uppercase tracking-[0.2em]">
+        <p>&copy; 2026 Developed on GitHub &bull; Open Source Complexity</p>
+    </footer>
+
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AETHERIUS | Ultra High Graphics</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
