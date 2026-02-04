@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AETHERIUS | ORBITAL COMBAT</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Courier New', monospace; user-select: none; }
+        #hud { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        .crosshair { position: absolute; top: 50%; left: 50%; width: 20px; height: 20px; border: 2px solid rgba(0, 255, 255, 0.5); transform: translate(-50%, -50%); border-radius: 50%; }
+        .stat-box { position: absolute; bottom: 20px; left: 20px; color: #0ff; text-shadow: 0 0 5px #0ff; font-size: 14px; }
+        .warning { color: #f00; text-shadow: 0 0 5px #f00; display: none; position: absolute; top: 20%; left: 50%; transform: translateX(-50%); font-size: 24px; font-weight: bold; animation: blink 0.5s infinite; }
+        #score { position: absolute; top: 20px; right: 20px; color: #d4af37; font-size: 24px; font-weight: bold; text-shadow: 0 0 10px #d4af37; }
+        #start-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; pointer-events: auto; z-index: 10; }
+        button { background: #d4af37; border: none; padding: 15px 40px; font-size: 20px; font-weight: bold; cursor: pointer; clip-path: polygon(10% 0, 100% 0, 100% 80%, 90% 100%, 0 100%, 0 20%); transition: 0.2s; }
+        button:hover { background: #fff; transform: scale(1.05); }
+        @keyframes blink { 50% { opacity: 0; } }
+    </style>
+</head>
+<body>
+
+    <div id="start-screen">
+        <h1 style="font-size: 60px; margin-bottom: 0px; text-shadow: 0 0 20px #d4af37;">AETHERIUS</h1>
+        <p style="letter-spacing: 5px; margin-bottom: 40px; color: #888;">ORBITAL DEFENSE SYSTEM</p>
+        <button onclick="startGame()">INITIATE LAUNCH</button>
+        <p style="margin-top: 20px; font-size: 12px; color: #555;">MOUSE to Steer | CLICK to Fire | W/S for Throttle</p>
+    </div>
+
+    <div id="hud" style="display:none;">
+        <div class="crosshair"></div>
+        <div id="score">SCORE: 0</div>
+        <div class="stat-box">
+            <div>HULL INTEGRITY: <span id="health">100</span>%</div>
+            <div>THROTTLE: <span id="speed">0</span>%</div>
+            <div>ENTITIES: <span id="entities">0</span></div>
+        </div>
+        <div id="warning" class="warning">WARNING: SHIELD CRITICAL</div>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'https://cdn.skypack.dev/three@0.136.0';
+        import { EffectComposer } from 'https://cdn.skypack.dev/three@0.136.0/examples/jsm/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'https://cdn.skypack.dev/three@0.136.0/examples/jsm/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'https://cdn.skypack.dev/three@0.136.0/examples/jsm/postprocessing/UnrealBloomPass.js';
+
+        // --- GLOBAL VARIABLES ---
+        let scene, camera, renderer, composer;
+        let player, crosshairVector;
+        let enemies = [], particles = [], projectiles = [];
+        let score = 0, health = 100, gameActive = false;
+        let mouse = new THREE.Vector2(), targetRotation = new THREE.Vector2();
+        let speed = 0, baseSpeed = 0.5, boostSpeed = 1.5;
+        
+        // --- CONFIG ---
+        const ENEMY_COUNT = 15;
+        const WORLD_SIZE = 800;
+        
+        // --- INIT ---
+        window.startGame = function() {
+            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('hud').style.display = 'block';
+            init();
+            animate();
+            gameActive = true;
+        };
+
+        function init() {
+            // SCENE SETUP
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x050505, 0.002);
+            
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+            camera.position.z = 20;
+            camera.position.y = 5;
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.toneMapping = THREE.ReinhardToneMapping;
+            document.body.appendChild(renderer.domElement);
+
+            // POST PROCESSING (BLOOM)
+            const renderScene = new RenderPass(scene, camera);
+            const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+            bloomPass.threshold = 0;
+            bloomPass.strength = 2.0; // HIGH GRAPHICS GLOW
+            bloomPass.radius = 0.5;
+            
+            composer = new EffectComposer(renderer);
+            composer.addPass(renderScene);
+            composer.addPass(bloomPass);
+
+            // LIGHTS
+            const ambientLight = new THREE.AmbientLight(0x404040);
+            scene.add(ambientLight);
+            const sunLight = new THREE.DirectionalLight(0xffffff, 2);
+            sunLight.position.set(100, 100, 50);
+            scene.add(sunLight);
+
+            // STARFIELD (Procedural Complexity)
+            const starGeo = new THREE.BufferGeometry();
+            const starCount = 6000;
+            const starPos = new Float32Array(starCount * 3);
+            for(let i=0; i<starCount*3; i++) {
+                starPos[i] = (Math.random() - 0.5) * 2000;
+            }
+            starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+            const starMat = new THREE.PointsMaterial({color: 0xffffff, size: 0.7});
+            const starField = new THREE.Points(starGeo, starMat);
+            scene.add(starField);
+
+            // PLAYER SHIP
+            const shipGeo = new THREE.ConeGeometry(1, 4, 8);
+            shipGeo.rotateX(Math.PI / 2);
+            const shipMat = new THREE.MeshStandardMaterial({ color: 0x00ffff, emissive: 0x0044ff, emissiveIntensity: 0.5, roughness: 0.2, metalness: 0.8 });
+            player = new THREE.Mesh(shipGeo, shipMat);
+            
+            // Engine Glow
+            const engineGeo = new THREE.SphereGeometry(0.5, 8, 8);
+            const engineMat = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+            const engine = new THREE.Mesh(engineGeo, engineMat);
+            engine.position.z = 2;
+            player.add(engine);
+            
+            scene.add(player);
+
+            // INPUT LISTENERS
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mousedown', fireLaser);
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'w') speed = boostSpeed;
+                if (e.key === 's') speed = 0.1;
+            });
+            document.addEventListener('keyup', () => speed = baseSpeed);
+            window.addEventListener('resize', onWindowResize);
+
+            // SPAWN ENEMIES
+            for(let i=0; i<ENEMY_COUNT; i++) spawnEnemy();
+        }
+
+        // --- GAME LOGIC ---
+
+        function spawnEnemy() {
+            const geo = new THREE.TetrahedronGeometry(Math.random() * 2 + 1);
+            const mat = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0x550000, roughness: 0.4, metalness: 0.6 });
+            const enemy = new THREE.Mesh(geo, mat);
+            
+            // Random Position far away
+            const angle = Math.random() * Math.PI * 2;
+            const dist = 100 + Math.random() * 200;
+            enemy.position.set(Math.cos(angle)*dist, (Math.random()-0.5)*50, Math.sin(angle)*dist);
+            
+            enemy.userData = { 
+                speed: Math.random() * 0.5 + 0.2,
+                rotSpeed: Math.random() * 0.05,
+                hp: 3
+            };
+            scene.add(enemy);
+            enemies.push(enemy);
+        }
+
+        function fireLaser() {
+            if (!gameActive) return;
+            
+            const geo = new THREE.BoxGeometry(0.2, 0.2, 4);
+            const mat = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+            const laser = new THREE.Mesh(geo, mat);
+            
+            laser.position.copy(player.position);
+            laser.quaternion.copy(player.quaternion);
+            laser.translateX(Math.random() > 0.5 ? 1 : -1); // Dual cannons
+            
+            // Raycast direction
+            const direction = new THREE.Vector3(0, 0, -1);
+            direction.applyQuaternion(player.quaternion);
+            laser.userData = { velocity: direction.multiplyScalar(4) };
+            
+            scene.add(laser);
+            projectiles.push(laser);
+
+            // Recoil
+            player.position.add(direction.multiplyScalar(-0.2));
+        }
+
+        function createExplosion(pos) {
+            for (let i = 0; i < 8; i++) {
+                const geo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+                const mat = new THREE.MeshBasicMaterial({ color: 0xffaa00 });
+                const part = new THREE.Mesh(geo, mat);
+                part.position.copy(pos);
+                part.userData = { 
+                    vel: new THREE.Vector3((Math.random()-0.5), (Math.random()-0.5), (Math.random()-0.5)).multiplyScalar(0.5),
+                    life: 1.0 
+                };
+                scene.add(part);
+                particles.push(part);
+            }
+        }
+
+        function onMouseMove(event) {
+            // Normalize mouse position -1 to 1
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        }
+
+        function updatePlayer() {
+            // Smooth Rotation (Lerp)
+            targetRotation.x = mouse.y * 1.5;
+            targetRotation.y = mouse.x * -1.5;
+            
+            player.rotation.x += (targetRotation.x - player.rotation.x) * 0.1;
+            player.rotation.z += (targetRotation.y - player.rotation.z) * 0.1; // Roll
+            player.rotation.y += (targetRotation.y * -0.5 - player.rotation.y) * 0.1; // Yaw
+
+            // Move Forward
+            const forward = new THREE.Vector3(0, 0, -1);
+            forward.applyQuaternion(player.quaternion);
+            player.position.add(forward.multiplyScalar(speed));
+
+            // Camera Follow
+            const targetPos = player.position.clone().add(new THREE.Vector3(0, 4, 15).applyQuaternion(player.quaternion));
+            camera.position.lerp(targetPos, 0.1);
+            camera.lookAt(player.position.clone().add(forward.multiplyScalar(20)));
+        }
+
+        function updateEnemies() {
+            enemies.forEach((e, index) => {
+                // AI: Chase Player
+                e.lookAt(player.position);
+                const dir = new THREE.Vector3().subVectors(player.position, e.position).normalize();
+                e.position.add(dir.multiplyScalar(e.userData.speed));
+                
+                // Rotation animation
+                e.rotation.z += e.userData.rotSpeed;
+
+                // Collision with Player
+                if (e.position.distanceTo(player.position) < 3) {
+                    health -= 10;
+                    createExplosion(e.position);
+                    scene.remove(e);
+                    enemies.splice(index, 1);
+                    spawnEnemy();
+                    document.getElementById('health').innerText = health;
+                    if (health <= 30) document.getElementById('warning').style.display = 'block';
+                    if (health <= 0) {
+                        alert("HULL BREACH. GAME OVER. Score: " + score);
+                        location.reload();
+                    }
+                }
+            });
+        }
+
+        function updateProjectiles() {
+            projectiles.forEach((p, pIdx) => {
+                p.position.add(p.userData.velocity);
+                
+                // Cleanup if too far
+                if (p.position.distanceTo(player.position) > 300) {
+                    scene.remove(p);
+                    projectiles.splice(pIdx, 1);
+                    return;
+                }
+
+                // Collision with Enemies
+                enemies.forEach((e, eIdx) => {
+                    if (p.position.distanceTo(e.position) < 2) {
+                        // Hit
+                        createExplosion(e.position);
+                        scene.remove(e);
+                        enemies.splice(eIdx, 1);
+                        scene.remove(p);
+                        projectiles.splice(pIdx, 1);
+                        
+                        score += 100;
+                        document.getElementById('score').innerText = "SCORE: " + score;
+                        spawnEnemy(); // Keep the flow infinite
+                    }
+                });
+            });
+        }
+
+        function updateParticles() {
+            particles.forEach((p, i) => {
+                p.position.add(p.userData.vel);
+                p.scale.multiplyScalar(0.9); // Shrink
+                p.userData.life -= 0.05;
+                if (p.userData.life <= 0) {
+                    scene.remove(p);
+                    particles.splice(i, 1);
+                }
+            });
+        }
+
+        function animate() {
+            if (!gameActive) return;
+            requestAnimationFrame(animate);
+
+            updatePlayer();
+            updateEnemies();
+            updateProjectiles();
+            updateParticles();
+
+            // Update UI Stats
+            document.getElementById('speed').innerText = Math.round(speed * 100);
+            document.getElementById('entities').innerText = enemies.length + projectiles.length;
+
+            composer.render();
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+    </script>
+</body>
+</html>
